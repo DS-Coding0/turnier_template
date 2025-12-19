@@ -1,13 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import TournamentList from './pages/TournamentList';
 import { useAuth } from './hooks/useAuth';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div>Lädt...</div>;
-  return user ? children : <Navigate to="/login" />;
+  if (loading) return <div style={{padding: '50px', textAlign: 'center'}}>Lädt...</div>;
+  return user ? children : <Navigate to="/login" replace />;
 }
 
 function App() {
@@ -16,12 +15,12 @@ function App() {
       <div style={{ 
         minHeight: '100vh', 
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: '20px 0'
+        color: 'white',
+        fontFamily: 'Arial, sans-serif'
       }}>
+        {/* Navigation */}
         <nav style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          padding: '20px 20px 0',
+          padding: '20px', 
           background: 'rgba(255,255,255,0.1)',
           backdropFilter: 'blur(10px)'
         }}>
@@ -35,24 +34,25 @@ function App() {
           <Link to="/tournaments" style={{ 
             color: 'white', 
             fontSize: '18px', 
-            textDecoration: 'none',
-            marginRight: '20px'
+            textDecoration: 'none'
           }}>Turniere</Link>
         </nav>
 
-        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        {/* Main Content */}
+        <main style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' }}>
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
             <Route path="/tournaments" element={<TournamentList />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <div style={{ textAlign: 'center', padding: '50px' }}>
+                  <h1>Dashboard (Bald!)</h1>
+                  <p>Willkommen zurück!</p>
+                </div>
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
