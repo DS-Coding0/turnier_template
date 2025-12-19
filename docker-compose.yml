@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  backend:
+    build: ./turnier-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+    env_file:
+      # - .env
+      - ./turnier-backend/.env  # Dein aktueller .env
+    networks:
+      - turnier-net
+    restart: unless-stopped
+
+  frontend:
+    build: ./turnier-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - turnier-net
+    restart: unless-stopped
+
+networks:
+  turnier-net:
+    driver: bridge

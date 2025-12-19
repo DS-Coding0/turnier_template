@@ -1,0 +1,28 @@
+{
+  "name": "turnier-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx nodemon server.js",
+    "start": "node server.js",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:create": "npx sequelize-cli migration:generate --name",
+    "db:undo": "npx sequelize-cli db:migrate:undo:all",
+    "db:reset": "npx sequelize-cli db:migrate:undo:all && npx sequelize-cli db:migrate"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mariadb": "^3.4.5",
+    "mysql2": "^3.6.5",
+    "sequelize": "^6.37.1",
+    "socket.io": "^4.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "sequelize-cli": "^6.6.2"
+  }
+}
