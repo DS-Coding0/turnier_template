@@ -20,26 +20,33 @@ const sequelize = new Sequelize(
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { 
+  cors: { origin: "http://localhost:5173" } 
+});
+const userRoutes = require('./routes/users');
 
-app.use(cors());
+// 🟢 1. MIDDLEWARE ZUERST
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 
-// 🟢 FALLBACK Routes
+// 🟢 2. API TEST ROUTE ZUERST (BEVOR NAMESPACE ROUTES!)
 app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Server läuft perfekt! 🏆', 
-    timestamp: new Date().toISOString(),
-    dbConnected: !!global.sequelize,
-    tournamentAvailable: !!global.Tournament
-  });
+  res.json({ message: 'Server läuft perfekt! 🏆', timestamp: new Date().toISOString() });
+});
+
+// 🟢 3. NAMESPACE ROUTES DANACH
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/tournaments', require('./routes/tournaments'));
+app.use('/api/users', userRoutes);
+
+// 🟢 4. 404 CATCH-ALL ZULETZT
+app.use('*', (req, res) => {
+  res.status(404).json({ error: `Route ${req.originalUrl} nicht gefunden` });
 });
 
 // Socket.IO
 io.on('connection', (socket) => {
   console.log('🔌 Socket.IO Client connected');
-  socket.on('join:channel', (channelId) => socket.join(channelId));
-  socket.on('message:channel', (data) => io.to(data.channelId).emit('message', data));
 });
 
 // 🟢 SERVER START
@@ -50,28 +57,15 @@ server.listen(3001, async () => {
     await sequelize.authenticate();
     console.log('✅ DB Connected!');
     
-    // 🟢 Tournament Model mit created_at (DB Schema)
     const Tournament = require('./models/Tournament')(sequelize, Sequelize.DataTypes);
     global.Tournament = Tournament;
     global.Op = Op;
     global.sequelize = sequelize;
     console.log('✅ Tournament Model geladen!');
     
-    // 🟢 Routes laden
-    try {
-      app.use('/api/auth', require('./routes/auth'));
-      console.log('✅ Auth routes geladen');
-    } catch (e) {
-      console.log('⚠️ Auth routes übersprungen');
-    }
-    
-    try {
-      app.use('/api/tournaments', require('./routes/tournaments'));
-      console.log('✅ Tournament routes geladen!');
-    } catch (e) {
-      console.error('❌ Tournament routes Fehler:', e.message);
-    }
-    
+    console.log('✅ /api/test Route geladen');
+    console.log('✅ /api/auth/* Routes geladen');
+    console.log('✅ /api/tournaments/* Routes geladen');
     console.log('✅ Server komplett bereit!');
     
   } catch (error) {

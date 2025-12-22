@@ -15,11 +15,15 @@ module.exports = (sequelize, DataTypes) => {
     mode: DataTypes.ENUM('KO', 'ROUND_ROBIN'),
     max_players: DataTypes.INTEGER,
     start_date: DataTypes.DATE,
-    status: DataTypes.ENUM('DRAFT', 'ACTIVE', 'FINISHED'),
+    status: DataTypes.ENUM('DRAFT', 'OPENED', 'ACTIVE', 'FINISHED'),
     created_by: DataTypes.INTEGER,
-    created_at: DataTypes.DATE,  // ✅ Nur wenn vorhanden!
-    // updated_at: ?  ← Nur wenn in DB!
-    prizes: DataTypes.TEXT
+    created_at: DataTypes.DATE,
+    prizes: DataTypes.TEXT,
+    
+    // 🔥 NEU: SPIELER + BRACKET + STANDINGS
+    players: DataTypes.JSON, // [{"id":1,"userId":2,"name":"DS-Coding"},...]
+    matches: DataTypes.JSON, // KO: [{"round":1,"matchId":1,"player1":1,"player2":2,"score1":null}]
+    standings: DataTypes.JSON // Round Robin: [{"playerId":1,"wins":0,"points":0}]
   }, {
     sequelize,
     modelName: 'Tournament',

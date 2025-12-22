@@ -1,7 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import TournamentList from './pages/TournamentList';
-import { useAuth } from './hooks/useAuth';
+import AdminTournaments from './pages/AdminTournaments'; // 🟢 NEU!
+import Navbar from './components/Navbar'; // 🟢 Navbar
+import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
+import Tournament from './pages/Tournament'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -12,46 +17,35 @@ function ProtectedRoute({ children }) {
 function App() {
   return (
     <Router>
-      <div style={{ 
-        minHeight: '100vh', 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        {/* Navigation */}
-        <nav style={{ 
-          padding: '20px', 
-          background: 'rgba(255,255,255,0.1)',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <Link to="/" style={{ 
-            color: 'white', 
-            fontSize: '24px', 
-            fontWeight: 'bold', 
-            textDecoration: 'none',
-            marginRight: '30px'
-          }}>🏆 TurnierManager</Link>
-          <Link to="/tournaments" style={{ 
-            color: 'white', 
-            fontSize: '18px', 
-            textDecoration: 'none'
-          }}>Turniere</Link>
-        </nav>
-
-        {/* Main Content */}
-        <main style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        {/* 🟢 Navbar (ersetzt alte Nav) */}
+        <Navbar />
+        
+        {/* 🟢 Main Content */}
+        <main className="pt-20 pb-12 px-4 max-w-7xl mx-auto">
           <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/tournaments" element={<TournamentList />} />
+            
+            {/* 🟢 Protected Routes */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <div style={{ textAlign: 'center', padding: '50px' }}>
-                  <h1>Dashboard (Bald!)</h1>
-                  <p>Willkommen zurück!</p>
-                </div>
+                <Dashboard />
               </ProtectedRoute>
             } />
+            <Route path="/login" element={<Login />} />
+            
+            {/* 🟢 ADMIN PANEL */}
+            <Route path="/admin/tournaments" element={
+              <ProtectedRoute>
+                <AdminTournaments />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/profile" element={<Profile />} />
+
+            <Route path="/tournament/:id" element={<Tournament />} />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

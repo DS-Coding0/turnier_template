@@ -6,31 +6,68 @@ import {
 } from '@mui/material';
 
 const TournamentList = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [registerLoading, setRegisterLoading] = useState({});
   const [error, setError] = useState(null);
 
-  // fetchTournaments als useCallback mit deps
   const fetchTournaments = useCallback(async () => {
     setLoading(true);
     setError(null);
+    
     try {
-      const res = await fetch('http://localhost:3001/api/tournaments');
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Kein Token gefunden');
+      }
       
-      const data = await res.json();  // ✅ AWAIT HIER!
+      console.log('🔍 Fetching tournaments...'); // DEBUG
       
-      // Sicherstellen dass Array
+      const res = await fetch('http://localhost:3001/api/tournaments', {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Response status:', res.status, res.statusText); // DEBUG
+      
+      // ✅ TEXT ZUERST lesen - JSON PARSE prüfen!
+      const textResponse = await res.text();
+      console.log('📄 Raw response:', textResponse); // DEBUG
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${textResponse}`);
+      }
+      
+      // ✅ LEERES Response handlen
+      if (!textResponse) {
+        console.warn('⚠️ Leeres Response');
+        setTournaments([]);
+        return;
+      }
+      
+      // ✅ JSON PARSE mit try-catch
+      let data;
+      try {
+        data = JSON.parse(textResponse);
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', parseError);
+        console.error('Raw data:', textResponse);
+        throw new Error('Ungültiges JSON Response vom Server');
+      }
+      
+      // ✅ Array validieren
       if (Array.isArray(data)) {
         setTournaments(data);
       } else {
-        console.warn('Turniere keine Array:', data);
+        console.warn('⚠️ Kein Array Response:', data);
         setTournaments([]);
       }
+      
     } catch (error) {
-      console.error('Turniere Fehler:', error);
+      console.error('💥 Vollständiger Fehler:', error);
       setError(error.message);
       setTournaments([]);
     } finally {
@@ -38,12 +75,12 @@ const TournamentList = () => {
     }
   }, []);
 
-  // useEffect mit korrekten deps
   useEffect(() => {
     fetchTournaments();
   }, [fetchTournaments]);
 
   const handleRegister = async (tournamentId) => {
+    const token = localStorage.getItem('token');
     if (!token) {
       alert('Bitte zuerst einloggen');
       return;
@@ -51,7 +88,7 @@ const TournamentList = () => {
 
     setRegisterLoading(prev => ({ ...prev, [tournamentId]: true }));
     try {
-      const res = await fetch(`http://localhost:3001/api/tournaments/${tournamentId}/register`, {
+      const res = await fetch(`http://localhost:3001/api/tournaments/${tournamentId}/join`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -59,16 +96,21 @@ const TournamentList = () => {
         }
       });
       
-      if (res.ok) {
-        alert('✅ Registrierung erfolgreich!');
-        fetchTournaments(); // Refresh Liste
-      } else {
-        const errorData = await res.json();
-        alert(`❌ ${errorData.error || 'Registrierung fehlgeschlagen'}`);
+      const textResponse = await res.text();
+      if (!res.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(textResponse);
+        } catch {
+          errorData = { error: textResponse || 'Unbekannter Fehler' };
+        }
+        throw new Error(errorData.error);
       }
+      
+      alert('✅ Registrierung erfolgreich!');
+      fetchTournaments();
     } catch (error) {
-      console.error('Register Fehler:', error);
-      alert('❌ Netzwerkfehler bei Registrierung');
+      alert(`❌ ${error.message}`);
     } finally {
       setRegisterLoading(prev => ({ ...prev, [tournamentId]: false }));
     }
@@ -88,11 +130,22 @@ const TournamentList = () => {
   if (error) {
     return (
       <Container sx={{ mt: 8, textAlign: 'center' }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Fehler beim Laden der Turniere: {error}
+        <Alert severity="error" sx={{ mb: 2, maxWidth: 600, mx: 'auto' }}>
+          <strong>Fehler:</strong> {error}
         </Alert>
-        <Button variant="contained" onClick={fetchTournaments}>
-          Erneut versuchen
+        <Button 
+          variant="contained" 
+          onClick={fetchTournaments}
+          sx={{ mr: 2 }}
+        >
+          🔄 Erneut versuchen
+        </Button>
+        <Button 
+          variant="outlined" 
+          href="/login"
+          sx={{ ml: 2 }}
+        >
+          Zum Login
         </Button>
       </Container>
     );
@@ -123,11 +176,11 @@ const TournamentList = () => {
               height: '100%', 
               background: 'rgba(255,255,255,0.95)',
               backdropFilter: 'blur(10px)',
-              transition: 'transform 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-            >
+              transition: 'transform 0.2s',
+              '&:hover': {
+                transform: 'translateY(-5px)'
+              }
+            }}>
               <CardContent>
                 <Typography variant="h5" gutterBottom fontWeight="bold">
                   {tournament.title}
@@ -137,7 +190,7 @@ const TournamentList = () => {
                 </Typography>
                 <Box sx={{ mb: 2 }}>
                   <Chip 
-                    label={tournament.mode} 
+                    label={tournament.mode === 'KO' ? '⚔️ KO' : '🔄 Round Robin'} 
                     color="primary" 
                     size="small" 
                     sx={{ mr: 1 }} 
@@ -158,14 +211,14 @@ const TournamentList = () => {
                 )}
               </CardContent>
               <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                <Button size="small" variant="outlined">
+                <Button size="small" variant="outlined" href={`/tournament/${tournament.id}`}>
                   Details
                 </Button>
                 {user && (
                   <Button
                     size="small"
                     variant="contained"
-                    disabled={registerLoading[tournament.id] || !token}
+                    disabled={registerLoading[tournament.id]}
                     onClick={() => handleRegister(tournament.id)}
                   >
                     {registerLoading[tournament.id] ? 
@@ -186,11 +239,13 @@ const TournamentList = () => {
             🏪 Noch keine Turniere verfügbar
           </Typography>
           {user?.role === 'ADMIN' && (
-            <Typography variant="body1" sx={{ mt: 1 }}>
-              <Button href="/admin-tournaments" variant="contained" sx={{ mt: 1 }}>
-                Erstes Turnier anlegen
-              </Button>
-            </Typography>
+            <Button 
+              href="/admin-tournaments" 
+              variant="contained" 
+              sx={{ mt: 2 }}
+            >
+              Erstes Turnier anlegen
+            </Button>
           )}
         </Box>
       )}

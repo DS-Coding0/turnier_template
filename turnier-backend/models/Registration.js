@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     registered_at: {
       type: DataTypes.DATE,
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
     }
   }, {
     sequelize,
